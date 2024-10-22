@@ -56,7 +56,12 @@ void app_main() {
 
     // Configura WiFi
     bool credentials_exist = wifi_credentials_exist();
-    start_wifi_configuration(credentials_exist, "default_ssid", "default_password");
+    if (!credentials_exist) {
+        ESP_LOGI("WIFI_MANAGER", "Nenhuma credencial WiFi encontrada. Iniciando modo AP...");
+        start_ap_mode();  // Iniciar o modo AP para configuração
+    } else {
+        ESP_LOGI("WIFI_MANAGER", "Conectando-se ao WiFi salvo...");
+    }
 
     // Inicia a rotina do sensor
     xTaskCreate(&sensor_task, "sensor_task", 2048, NULL, 5, NULL);

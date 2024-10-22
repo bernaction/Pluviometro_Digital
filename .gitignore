@@ -53,4 +53,4 @@ dkms.conf
 
 
 # Local Build files
-/build
+/build/*

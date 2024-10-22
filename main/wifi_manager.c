@@ -192,7 +192,7 @@ bool wifi_credentials_exist() {
     }
 
     char ssid[32] = {0};
-    char password[64] = {0};
+    char password[64] = {0};  // Buffer para a senha
     size_t ssid_len = sizeof(ssid);
     size_t password_len = sizeof(password);
 
@@ -218,11 +218,22 @@ bool wifi_credentials_exist() {
         return false;
     }
 
+    // Log para verificar se as credenciais estão sendo carregadas corretamente
     ESP_LOGI("WIFI_MANAGER", "Credenciais carregadas - SSID: %s, Senha: %s", ssid, password);
+
+    // Aplicar as credenciais carregadas
+    wifi_config_t wifi_config = { 0 };
+    strncpy((char*)wifi_config.sta.ssid, ssid, sizeof(wifi_config.sta.ssid));
+    strncpy((char*)wifi_config.sta.password, password, sizeof(wifi_config.sta.password));
+
+    esp_wifi_set_mode(WIFI_MODE_STA);  // Colocar no modo STA
+    esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config);  // Configurar WiFi com as credenciais
+    esp_wifi_start();  // Iniciar WiFi
 
     nvs_close(nvs_handle);
     return true;
 }
+
 
 
 void save_wifi_credentials(const char* ssid, const char* password) {
@@ -275,7 +286,7 @@ esp_err_t get_handler(httpd_req_t *req) {
 
 // Função para lidar com o formulário POST de configuração
 esp_err_t post_handler(httpd_req_t *req) {
-    char buf[100];
+    char buf[100] = {0};  // Buffer de entrada com valores zerados
     int ret, remaining = req->content_len;
 
     while (remaining > 0) {
@@ -288,27 +299,29 @@ esp_err_t post_handler(httpd_req_t *req) {
         remaining -= ret;
     }
 
-    // Processar os dados do formulário e garantir que as strings sejam terminadas corretamente
+    // Processar o SSID e a senha garantindo que as strings sejam terminadas corretamente
     char ssid[32] = {0};
-    char password[64] = {0};
+    char password[64] = {0};  // Buffer com 64 caracteres para a senha
 
-    // Garantir que a string da senha e SSID sejam terminadas corretamente com '\0'
-    sscanf(buf, "ssid=%31[^&]&password=%63s", ssid, password);
+    sscanf(buf, "ssid=%31[^&]&password=%63s", ssid, password);  // Limita os tamanhos máximos
 
-    // Logar o SSID e senha recebidos
+    // Certifique-se de que as strings estão terminadas corretamente
+    ssid[31] = '\0';  // Garante que o SSID seja terminado
+    password[63] = '\0';  // Garante que a senha seja terminada
+
+    // Logar o SSID e a senha para depuração
     ESP_LOGI("WIFI_MANAGER", "Recebido SSID: %s, Senha: %s", ssid, password);
 
-    // Salvar SSID e Senha
+    // Salvar as credenciais no NVS
     save_wifi_credentials(ssid, password);
 
-    // Enviar uma resposta de sucesso
+    // Enviar a resposta e reiniciar o ESP
     httpd_resp_send(req, "Configuração salva. Reiniciando o dispositivo...", HTTPD_RESP_USE_STRLEN);
-
-    // Reinicie o ESP32 para aplicar a nova configuração WiFi
     esp_restart();
 
     return ESP_OK;
 }
+
 
 
 httpd_uri_t uri_get = {
