@@ -20,23 +20,21 @@
 extern void erase_wifi_credentials();
 
 void check_reset_button() {
-    int64_t press_start_time = 0;  // Use uma variável para armazenar o tempo inicial da pressão
-
     while (true) {
-        if (gpio_get_level(BUTTON_PIN) == 0) {  // Botão pressionado
-            if (press_start_time == 0) {
-                press_start_time = esp_timer_get_time();  // Registra o tempo de início
-            } else if ((esp_timer_get_time() - press_start_time) >= BUTTON_PRESS_TIME * 1000) {  // Verifica se passaram 5 segundos
-                ESP_LOGI("MAIN", "Botão pressionado por 5 segundos. Resetando configurações WiFi.");
-                erase_wifi_credentials();
-                esp_restart();
-            }
-        } else {  // Botão não pressionado
-            press_start_time = 0;  // Reseta o tempo
+        if (gpio_get_level(BUTTON_PIN) == 0) {  // Botão pressionado (nível baixo)
+            ESP_LOGI("MAIN", "Botão pressionado. Resetando configurações WiFi.");
+            
+            // Apaga as credenciais WiFi da NVS
+            erase_wifi_credentials();
+
+            // Reinicia o dispositivo
+            esp_restart();
         }
         vTaskDelay(100 / portTICK_PERIOD_MS);  // Aguarda 100ms antes de verificar novamente
     }
 }
+
+
 
 void app_main() {
     // Desabilitar o Watchdog Timer do task idle
@@ -67,5 +65,5 @@ void app_main() {
     // xTaskCreate(&send_data_thingspeak, "send_data_thingspeak", 2048, NULL, 5, NULL);
 
     // Verifica o botão de reset
-    //xTaskCreate(check_reset_button, "check_reset_button", 2048, NULL, 5, NULL);   
+    xTaskCreate(check_reset_button, "check_reset_button", 2048, NULL, 5, NULL);   
 }

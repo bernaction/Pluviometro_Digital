@@ -37,7 +37,7 @@ void dns_server_task(void *pvParameters) {
         int len = recvfrom(sock, buffer, sizeof(buffer), 0, (struct sockaddr *)&client_addr, &client_len);
         if (len > 0) {
             // Redireciona todas as consultas DNS para o IP do captive portal
-            ESP_LOGI("DNS", "Requisição DNS recebida, redirecionando para IP: %s", CAPTIVE_PORTAL_IP);
+            // ESP_LOGI("DNS", "Requisição DNS recebida, redirecionando para IP: %s", CAPTIVE_PORTAL_IP);
             memset(buffer + 2, 0x84, 1);  // Configura a flag de resposta DNS
             sendto(sock, buffer, len, 0, (struct sockaddr *)&client_addr, client_len);
         }
@@ -141,14 +141,30 @@ void start_ap_mode() {
 
 // Gerenciador de eventos de WiFi
 static void wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {
+    static wifi_config_t wifi_config;
+
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
+        // Obtenha a configuração WiFi
+        ESP_ERROR_CHECK(esp_wifi_get_config(ESP_IF_WIFI_STA, &wifi_config));
+
+        // Mostrar o SSID e a senha no log
+        ESP_LOGI(TAG, "Tentando conectar ao SSID: %s com a Senha: %s", wifi_config.sta.ssid, wifi_config.sta.password);
+
+        // Iniciar conexão WiFi
         esp_wifi_connect();
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        ESP_LOGI(TAG, "Tentando reconectar ao WiFi...");
+        // Log quando a conexão falhar
+        ESP_LOGI(TAG, "Conexão falhou. Tentando reconectar ao SSID: %s", wifi_config.sta.ssid);
+
+        // Tentar reconectar
         esp_wifi_connect();
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-        ESP_LOGI(TAG, "Conectado. Endereço IP: " IPSTR, IP2STR(&event->ip_info.ip));
+
+        // Log quando a conexão for bem-sucedida
+        ESP_LOGI(TAG, "Conectado ao SSID: %s. Endereço IP: " IPSTR, wifi_config.sta.ssid, IP2STR(&event->ip_info.ip));
+        
+        // Definir o bit de conexão estabelecida no grupo de eventos
         xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
     }
 }
@@ -168,35 +184,79 @@ void start_wifi_configuration(bool credentials_exist, const char* ssid, const ch
 
 // Funções para manipulação do NVS para salvar e carregar as credenciais
 bool wifi_credentials_exist() {
-    esp_err_t err = esp_wifi_stop();
-    if (err == ESP_ERR_WIFI_NOT_INIT) {
-        ESP_LOGI(TAG, "WiFi não estava inicializado");
-    } else if (err == ESP_OK) {
-        ESP_LOGI(TAG, "WiFi parado com sucesso");
-    } else {
-        ESP_LOGE(TAG, "Erro ao parar o WiFi: %s", esp_err_to_name(err));
+    nvs_handle_t nvs_handle;
+    esp_err_t err = nvs_open("wifi_config", NVS_READONLY, &nvs_handle);
+    if (err != ESP_OK) {
+        ESP_LOGI("WIFI_MANAGER", "Nenhuma credencial WiFi encontrada na NVS");
+        return false;
     }
 
-    nvs_handle_t nvs_handle;
-    err = nvs_open("wifi_config", NVS_READONLY, &nvs_handle);
-    if (err != ESP_OK) return false;
-
-    char ssid[32];
+    char ssid[32] = {0};
+    char password[64] = {0};
     size_t ssid_len = sizeof(ssid);
-    err = nvs_get_str(nvs_handle, "ssid", ssid, &ssid_len);
-    nvs_close(nvs_handle);
+    size_t password_len = sizeof(password);
 
-    return err == ESP_OK;
+    err = nvs_get_str(nvs_handle, "ssid", ssid, &ssid_len);
+    if (err == ESP_ERR_NVS_NOT_FOUND) {
+        ESP_LOGI("WIFI_MANAGER", "Nenhum SSID encontrado");
+        nvs_close(nvs_handle);
+        return false;
+    } else if (err != ESP_OK) {
+        ESP_LOGE("WIFI_MANAGER", "Erro ao carregar SSID da NVS: %s", esp_err_to_name(err));
+        nvs_close(nvs_handle);
+        return false;
+    }
+
+    err = nvs_get_str(nvs_handle, "password", password, &password_len);
+    if (err == ESP_ERR_NVS_NOT_FOUND) {
+        ESP_LOGI("WIFI_MANAGER", "Nenhuma senha encontrada");
+        nvs_close(nvs_handle);
+        return false;
+    } else if (err != ESP_OK) {
+        ESP_LOGE("WIFI_MANAGER", "Erro ao carregar senha da NVS: %s", esp_err_to_name(err));
+        nvs_close(nvs_handle);
+        return false;
+    }
+
+    ESP_LOGI("WIFI_MANAGER", "Credenciais carregadas - SSID: %s, Senha: %s", ssid, password);
+
+    nvs_close(nvs_handle);
+    return true;
 }
+
 
 void save_wifi_credentials(const char* ssid, const char* password) {
     nvs_handle_t nvs_handle;
-    nvs_open("wifi_config", NVS_READWRITE, &nvs_handle);
-    nvs_set_str(nvs_handle, "ssid", ssid);
-    nvs_set_str(nvs_handle, "password", password);
-    nvs_commit(nvs_handle);
+    esp_err_t err = nvs_open("wifi_config", NVS_READWRITE, &nvs_handle);
+    if (err != ESP_OK) {
+        ESP_LOGE("WIFI_MANAGER", "Erro ao abrir NVS para escrita: %s", esp_err_to_name(err));
+        return;
+    }
+
+    // Salva o SSID
+    err = nvs_set_str(nvs_handle, "ssid", ssid);
+    if (err != ESP_OK) {
+        ESP_LOGE("WIFI_MANAGER", "Erro ao salvar o SSID: %s", esp_err_to_name(err));
+    }
+
+    // Salva a senha
+    err = nvs_set_str(nvs_handle, "password", password);
+    if (err != ESP_OK) {
+        ESP_LOGE("WIFI_MANAGER", "Erro ao salvar a senha: %s", esp_err_to_name(err));
+    }
+
+    // Comitar as mudanças
+    err = nvs_commit(nvs_handle);
+    if (err != ESP_OK) {
+        ESP_LOGE("WIFI_MANAGER", "Erro ao fazer commit das credenciais: %s", esp_err_to_name(err));
+    } else {
+        ESP_LOGI("WIFI_MANAGER", "Credenciais WiFi salvas com sucesso");
+    }
+
     nvs_close(nvs_handle);
 }
+
+
 
 // Função para redirecionar para a raiz
 esp_err_t redirect_to_root_handler(httpd_req_t *req) {
@@ -208,7 +268,7 @@ esp_err_t redirect_to_root_handler(httpd_req_t *req) {
 
 // Função para lidar com requisições GET (exibir a página de configuração)
 esp_err_t get_handler(httpd_req_t *req) {
-    const char *response = "<html><body><h1>Configuração WiFi</h1><form action=\"/config\" method=\"POST\"><label>SSID: </label><input type=\"text\" name=\"ssid\"><br><label>Senha: </label><input type=\"password\" name=\"password\"><br><input type=\"submit\" value=\"Configurar\"></form></body></html>";
+    const char *response = "<html><body><h1>Configuracao WiFi</h1><form action=\"/config\" method=\"POST\"><label>SSID: </label><input type=\"text\" name=\"ssid\"><br><label>Senha: </label><input type=\"password\" name=\"password\"><br><input type=\"submit\" value=\"Configurar\"></form></body></html>";
     httpd_resp_send(req, response, strlen(response));
     return ESP_OK;
 }
@@ -228,14 +288,17 @@ esp_err_t post_handler(httpd_req_t *req) {
         remaining -= ret;
     }
 
-    // Processar os dados do formulário e salvar o SSID e senha
-    // Exemplo de processamento básico (você pode implementar um parser mais robusto)
-    char ssid[32] = {0}, password[64] = {0};
+    // Processar os dados do formulário e garantir que as strings sejam terminadas corretamente
+    char ssid[32] = {0};
+    char password[64] = {0};
+
+    // Garantir que a string da senha e SSID sejam terminadas corretamente com '\0'
     sscanf(buf, "ssid=%31[^&]&password=%63s", ssid, password);
 
-    ESP_LOGI(TAG, "Recebido SSID: %s, Senha: %s", ssid, password);
+    // Logar o SSID e senha recebidos
+    ESP_LOGI("WIFI_MANAGER", "Recebido SSID: %s, Senha: %s", ssid, password);
 
-    // Salvar SSID e Senha (use a função save_wifi_credentials já criada)
+    // Salvar SSID e Senha
     save_wifi_credentials(ssid, password);
 
     // Enviar uma resposta de sucesso
@@ -246,6 +309,7 @@ esp_err_t post_handler(httpd_req_t *req) {
 
     return ESP_OK;
 }
+
 
 httpd_uri_t uri_get = {
     .uri       = "/",

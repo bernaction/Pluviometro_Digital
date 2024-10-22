@@ -1,7 +1,7 @@
 {
     "version":            "1.1",
     "project_name":       "Pluviometro",
-    "project_version":    "f229153-dirty",
+    "project_version":    "b1c0805-dirty",
     "project_path":       "D:/Pluviometro_Digital",
     "idf_path":           "C:/Users/berna/esp/v5.3.1/esp-idf",
     "build_dir":          "D:/Pluviometro_Digital/build",
