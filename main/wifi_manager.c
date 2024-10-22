@@ -17,8 +17,9 @@
 
 static const char* TAG = "WIFI_MANAGER";
 static bool connecting = false; 
-static EventGroupHandle_t s_wifi_event_group;
+EventGroupHandle_t s_wifi_event_group;
 #define WIFI_CONNECTED_BIT BIT0
+
 #define MIN(a,b) ((a) < (b) ? (a) : (b))  // Define a macro MIN
 static bool wifi_initialized = false;  // Verifica se o WiFi foi inicializado
 

@@ -99,7 +99,7 @@ void task2(void *pvParameter) {
 
 void app_main() {
     // Desabilitar o Watchdog Timer do task idle
-    esp_task_wdt_deinit();
+   // esp_task_wdt_deinit();
     //esp_task_wdt_init(10, false);  // Inicializa o WDT com um timeout de 10 segundos
 
     // Inicializa NVS
@@ -131,7 +131,7 @@ void app_main() {
     xTaskCreatePinnedToCore(sensor_task, "sensor_task", 2048, NULL, 5, NULL, 0);  // Núcleo 0
 
     // Envia dados para o thingspeak no núcleo 1 (APP CPU)
-    xTaskCreatePinnedToCore(send_data_thingspeak, "send_data_thingspeak", 2048, NULL, 5, NULL, 1);  // Núcleo 1
+    xTaskCreatePinnedToCore(send_data_thingspeak, "send_data_thingspeak", 4096, NULL, 5, NULL, 1);  // Núcleo 1
 
     // Verifica o botão de reset no núcleo 1 (APP CPU)
     xTaskCreatePinnedToCore(check_reset_button, "check_reset_button", 2048, NULL, 5, NULL, 1);  // Núcleo 1

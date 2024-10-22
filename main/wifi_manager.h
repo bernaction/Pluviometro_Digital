@@ -1,6 +1,9 @@
 #ifndef WIFI_MANAGER_H
 #define WIFI_MANAGER_H
 
+#define WIFI_CONNECTED_BIT BIT0
+extern EventGroupHandle_t s_wifi_event_group;
+
 #include <stdbool.h>
 
 void start_wifi_configuration(bool credentials_exist, const char* ssid, const char* password);
