@@ -2,8 +2,9 @@
 #include "freertos/task.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
-#include "sensor_task.h"
 #include "esp_http_client.h"
+
+#include "sensor_task.h"
 
 #ifndef portTICK_PERIOD_MS
 #define portTICK_PERIOD_MS (1000 / CONFIG_FREERTOS_HZ)

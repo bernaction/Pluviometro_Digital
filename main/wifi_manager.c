@@ -1,5 +1,3 @@
-#include "wifi_manager.h"
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include "esp_log.h"
@@ -9,9 +7,10 @@
 #include "nvs_flash.h"
 #include "esp_http_server.h"
 #include <string.h>
-
 #include "lwip/sockets.h"
 #include "lwip/dns.h"
+
+#include "wifi_manager.h"
 
 #define DNS_PORT 53
 #define CAPTIVE_PORTAL_IP "192.168.4.1"
@@ -144,37 +143,48 @@ void start_ap_mode() {
     start_http_server();
 }
 
-// Gerenciador de eventos de WiFi
+// Função de gerenciamento de eventos WiFi
 static void wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {
     static wifi_config_t wifi_config;
 
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
-        // Obtenha a configuração WiFi
-        ESP_ERROR_CHECK(esp_wifi_get_config(ESP_IF_WIFI_STA, &wifi_config));
-
-        // Mostrar o SSID e a senha no log
-        ESP_LOGI(TAG, "Tentando conectar ao SSID: %s com a Senha: %s", wifi_config.sta.ssid, wifi_config.sta.password);
-
-        // Iniciar conexão WiFi
-        esp_wifi_connect();
+        // Tenta conectar ao WiFi
+        ESP_LOGI(TAG, "Iniciando conexão WiFi...");
+        esp_wifi_get_config(ESP_IF_WIFI_STA, &wifi_config);  // Obtém a configuração WiFi
+        ESP_LOGI(TAG, "Tentando conectar ao SSID: %s", wifi_config.sta.ssid);
+        esp_err_t err = esp_wifi_connect();
+        if (err == ESP_OK) {
+            ESP_LOGI(TAG, "Conexão WiFi iniciada com sucesso.");
+        } else {
+            ESP_LOGE(TAG, "Erro ao iniciar conexão WiFi: %s", esp_err_to_name(err));
+        }
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
         // Log quando a conexão falhar
-        ESP_LOGI(TAG, "Conexão falhou. Tentando reconectar ao SSID: %s", wifi_config.sta.ssid);
+        ESP_LOGI(TAG, "Conexão falhou. Tentando reconectar ao WiFi...");
 
-        // Tentar reconectar
-        esp_wifi_connect();
+        // Tentar reconectar ao WiFi
+        esp_err_t err = esp_wifi_connect();
+        if (err == ESP_OK) {
+            ESP_LOGI(TAG, "Tentando reconectar ao WiFi...");
+        } else {
+            ESP_LOGE(TAG, "Erro ao tentar reconectar: %s", esp_err_to_name(err));
+        }
+
+        led_off();  // Desliga o LED se perder a conexão
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
 
-        // Log quando a conexão for bem-sucedida
-        ESP_LOGI(TAG, "Conectado ao SSID: %s. Endereço IP: " IPSTR, wifi_config.sta.ssid, IP2STR(&event->ip_info.ip));
-        vTaskDelete(NULL);  // Para a task que pisca o LED (se estiver rodando)
-        led_on();  // Liga o LED fixo
-        
-        // Definir o bit de conexão estabelecida no grupo de eventos
+        // Conexão WiFi bem-sucedida, exibir IP e acender LED
+        ESP_LOGI(TAG, "Conectado ao WiFi. Endereço IP: " IPSTR, IP2STR(&event->ip_info.ip));
+        led_on();  // Liga o LED após a conexão bem-sucedida
+
+        // Define o bit de conexão estabelecida
         xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
+    } else {
+        ESP_LOGW(TAG, "Evento inesperado: base=%s, id=%ld", event_base, (long int)event_id);
     }
 }
+
 
 // Função para iniciar a configuração WiFi
 void start_wifi_configuration(bool credentials_exist, const char* ssid, const char* password) {
@@ -183,6 +193,7 @@ void start_wifi_configuration(bool credentials_exist, const char* ssid, const ch
     if (credentials_exist) {
         ESP_LOGI(TAG, "Conectando-se ao WiFi salvo...");
         start_sta_mode(ssid, password);
+        led_on();  // Liga o LED fixo
     } else {
         ESP_LOGI(TAG, "Iniciando em modo AP para configuracao WiFi...");
         start_ap_mode();
