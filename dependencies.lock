@@ -1,0 +1,21 @@
+dependencies:
+  augtons/freertos-cpp:
+    component_hash: ea2e0d6926e778970d7b2c14cc5d9216b19240cbdba386168080205241a22018
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=4.4'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 1.0.3
+  idf:
+    source:
+      type: idf
+    version: 5.3.1
+direct_dependencies:
+- augtons/freertos-cpp
+- idf
+manifest_hash: 3d210c884f3f13c43206c3881c185a27b1ff51d0a722dc4c6cdce1c4d56c2585
+target: esp32
+version: 2.0.0
