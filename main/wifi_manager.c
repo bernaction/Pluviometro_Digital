@@ -16,6 +16,7 @@
 #define CAPTIVE_PORTAL_IP "192.168.4.1"
 
 static const char* TAG = "WIFI_MANAGER";
+static bool connecting = false; 
 static EventGroupHandle_t s_wifi_event_group;
 #define WIFI_CONNECTED_BIT BIT0
 #define MIN(a,b) ((a) < (b) ? (a) : (b))  // Define a macro MIN
@@ -88,9 +89,27 @@ void initialize_wifi() {
     }
 }
 
+// Função para conectar/reconectar ao WiFi
+void connect_wifi() {
+    if (connecting) {
+        ESP_LOGW(TAG, "Já estamos tentando conectar, ignorando nova tentativa.");
+        return;
+    }
+
+    esp_err_t err = esp_wifi_connect();
+    if (err == ESP_OK) {
+        ESP_LOGI(TAG, "Tentando conectar ao WiFi... 1");
+        connecting = true;  // Marcar que estamos conectando
+    } else {
+        ESP_LOGE(TAG, "Erro ao conectar ao WiFi: %s", esp_err_to_name(err));
+    }
+}
+
 // Função para iniciar o modo STA (Station)
 void start_sta_mode(const char* ssid, const char* password) {
-    initialize_wifi();  // Garante que o WiFi foi inicializado
+    if (!wifi_initialized) {
+        initialize_wifi();
+    }
 
     esp_netif_create_default_wifi_sta();
 
@@ -100,22 +119,9 @@ void start_sta_mode(const char* ssid, const char* password) {
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
-    
-    // Registro de eventos WiFi
-    esp_event_handler_instance_t instance_any_id;
-    esp_event_handler_instance_t instance_got_ip;
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
-                                                        ESP_EVENT_ANY_ID,
-                                                        &wifi_event_handler,
-                                                        NULL,
-                                                        &instance_any_id));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
-                                                        IP_EVENT_STA_GOT_IP,
-                                                        &wifi_event_handler,
-                                                        NULL,
-                                                        &instance_got_ip));
+    ESP_ERROR_CHECK(esp_wifi_start());
 
-    ESP_ERROR_CHECK(esp_wifi_start());  // Iniciar o WiFi
+    connect_wifi();  // Inicia a conexão WiFi
 }
 
 
@@ -161,60 +167,58 @@ void start_ap_mode() {
 
 // Função de gerenciamento de eventos WiFi
 static void wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {
-    static wifi_config_t wifi_config;
-
-    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
-        // Tenta conectar ao WiFi
-        ESP_LOGI(TAG, "Iniciando conexão WiFi...");
-        esp_wifi_get_config(ESP_IF_WIFI_STA, &wifi_config);  // Obtém a configuração WiFi
-        ESP_LOGI(TAG, "Tentando conectar ao SSID: %s", wifi_config.sta.ssid);
-        esp_err_t err = esp_wifi_connect();
-        if (err == ESP_OK) {
-            ESP_LOGI(TAG, "Conexão WiFi iniciada com sucesso.");
-        } else {
-            ESP_LOGE(TAG, "Erro ao iniciar conexão WiFi: %s", esp_err_to_name(err));
+    if (event_base == WIFI_EVENT) {
+        if (event_id == WIFI_EVENT_STA_START) {
+            ESP_LOGI(TAG, "Iniciando conexão WiFi...");
+            connect_wifi();  // Tenta conectar
+        } else if (event_id == WIFI_EVENT_STA_DISCONNECTED) {
+            ESP_LOGI(TAG, "WiFi desconectado. Tentando reconectar... 2");
+            connecting = false;  // Permite nova tentativa de conexão
+            connect_wifi();  // Tenta reconectar
+            led_off();  // Desliga o LED se perder a conexão
         }
-    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        // Log quando a conexão falhar
-        ESP_LOGI(TAG, "Conexão falhou. Tentando reconectar ao WiFi...");
-
-        // Tentar reconectar ao WiFi
-        esp_err_t err = esp_wifi_connect();
-        if (err == ESP_OK) {
-            ESP_LOGI(TAG, "Tentando reconectar ao WiFi...");
-        } else {
-            ESP_LOGE(TAG, "Erro ao tentar reconectar: %s", esp_err_to_name(err));
-        }
-
-        led_off();  // Desliga o LED se perder a conexão
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-
-        // Conexão WiFi bem-sucedida, exibir IP e acender LED
         ESP_LOGI(TAG, "Conectado ao WiFi. Endereço IP: " IPSTR, IP2STR(&event->ip_info.ip));
         led_on();  // Liga o LED após a conexão bem-sucedida
+        connecting = false;  // Conexão bem-sucedida, resetar a flag
 
-        // Define o bit de conexão estabelecida
-        xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
+        // Verifique se o EventGroup foi criado antes de definir o bit
+        if (s_wifi_event_group != NULL) {
+            xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
+        } else {
+            ESP_LOGE(TAG, "EventGroup não foi criado!");
+        }
     } else {
         ESP_LOGW(TAG, "Evento inesperado: base=%s, id=%ld", event_base, (long int)event_id);
     }
 }
 
 
+
 // Função para iniciar a configuração WiFi
 void start_wifi_configuration(bool credentials_exist, const char* ssid, const char* password) {
-    s_wifi_event_group = xEventGroupCreate();
+    // Certifique-se de que o grupo de eventos está criado
+    if (s_wifi_event_group == NULL) {
+        s_wifi_event_group = xEventGroupCreate();  // Cria o grupo de eventos WiFi
+        if (s_wifi_event_group == NULL) {
+            ESP_LOGE(TAG, "Falha ao criar o grupo de eventos WiFi");
+            return;
+        } else {
+            ESP_LOGE(TAG, "Grupo de eventos WiFi criado com sucesso");
+        }
+    }
 
     if (credentials_exist) {
         ESP_LOGI(TAG, "Conectando-se ao WiFi salvo...");
         start_sta_mode(ssid, password);
-        led_on();  // Liga o LED fixo
     } else {
         ESP_LOGI(TAG, "Iniciando em modo AP para configuracao WiFi...");
         start_ap_mode();
     }
 }
+
+
 
 // Funções para manipulação do NVS para salvar e carregar as credenciais
 bool wifi_credentials_exist() {

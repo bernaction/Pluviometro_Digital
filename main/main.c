@@ -11,7 +11,7 @@
 #include "sensor_task.h"
 
 #define BOOT_BUTTON_PIN GPIO_NUM_0  // O botão BOOT está ligado ao GPIO 0
-#define BUTTON_PRESS_TIME 5000  // Tempo para resetar em milissegundos (5 segundos)
+#define BUTTON_PRESS_TIME 5  // Tempo para resetar em segundos
 #define LED_PIN GPIO_NUM_2  // GPIO do LED na ESP32 WROOM-32
 #define DNS_PORT 53
 #define CAPTIVE_PORTAL_IP "192.168.4.1"
@@ -120,15 +120,12 @@ void app_main() {
 
     // Configura WiFi
     bool credentials_exist = wifi_credentials_exist();
-    if (!credentials_exist) {
-        ESP_LOGI("WIFI_MANAGER", "Nenhuma credencial WiFi encontrada. Iniciando modo AP...");
-        start_ap_mode();  // Iniciar o modo AP para configuração
-    } else {
-        ESP_LOGI("WIFI_MANAGER", "Conectando-se ao WiFi salvo...");
-        char ssid[32], password[64];
+    char ssid[32] = {0};
+    char password[64] = {0};
+    if (credentials_exist) {
         get_saved_wifi_credentials(ssid, password);  // Função que retorna o SSID e senha salvos
-        start_sta_mode(ssid, password);  // Inicie o modo STA com as credenciais recuperadas
     }
+    start_wifi_configuration(credentials_exist, ssid, password); 
 
     // Inicia a rotina do sensor no núcleo 0 (PRO CPU)
     xTaskCreatePinnedToCore(sensor_task, "sensor_task", 2048, NULL, 5, NULL, 0);  // Núcleo 0
