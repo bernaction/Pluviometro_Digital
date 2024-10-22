@@ -1,3 +1,5 @@
+#include "wifi_manager.h"
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
@@ -8,13 +10,36 @@
 #include "sensor_task.h"
 #include "nvs_flash.h"
 
-
-
-
 #define BUTTON_PIN GPIO_NUM_0  // Pino do botão
-#define BUTTON_PRESS_TIME 5000 // Tempo de 5 segundos para resetar
+#define LED_PIN GPIO_NUM_2  // GPIO do LED na ESP32 WROOM-32
 #define DNS_PORT 53
 #define CAPTIVE_PORTAL_IP "192.168.4.1"
+
+// Função para configurar o LED como saída
+void configure_led() {
+    gpio_reset_pin(LED_PIN);
+    gpio_set_direction(LED_PIN, GPIO_MODE_OUTPUT);
+}
+
+// Função para piscar o LED (modo AP)
+void blink_led_task(void *pvParameter) {
+    while (true) {
+        gpio_set_level(LED_PIN, 1);  // Liga o LED
+        vTaskDelay(500 / portTICK_PERIOD_MS);  // Aguardar 500ms
+        gpio_set_level(LED_PIN, 0);  // Desliga o LED
+        vTaskDelay(500 / portTICK_PERIOD_MS);  // Aguardar 500ms
+    }
+}
+
+// Função para manter o LED aceso (modo STA)
+void led_on() {
+    gpio_set_level(LED_PIN, 1);  // Liga o LED permanentemente
+}
+
+// Função para apagar o LED (caso precise resetar)
+void led_off() {
+    gpio_set_level(LED_PIN, 0);  // Desliga o LED
+}
 
 
 extern void erase_wifi_credentials();
@@ -35,7 +60,6 @@ void check_reset_button() {
 }
 
 
-
 void app_main() {
     // Desabilitar o Watchdog Timer do task idle
     esp_task_wdt_deinit();
@@ -48,6 +72,9 @@ void app_main() {
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
+
+    // Configura o GPIO do botão e do LED
+    configure_led();  // Configura o LED
 
     // Configura o GPIO do botão
     gpio_reset_pin(BUTTON_PIN);

@@ -1,3 +1,5 @@
+#include "wifi_manager.h"
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include "esp_log.h"
@@ -104,6 +106,9 @@ void start_sta_mode(const char* ssid, const char* password) {
 
 // Função para iniciar o modo AP (Access Point)
 void start_ap_mode() {
+    configure_led();  // Configura o LED
+    xTaskCreate(blink_led_task, "blink_led_task", 1024, NULL, 5, NULL);  // Iniciar a task para piscar o LED
+
     initialize_wifi();  // Garante que o WiFi foi inicializado
 
     // Para o WiFi se já estiver em execução
@@ -163,6 +168,8 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t e
 
         // Log quando a conexão for bem-sucedida
         ESP_LOGI(TAG, "Conectado ao SSID: %s. Endereço IP: " IPSTR, wifi_config.sta.ssid, IP2STR(&event->ip_info.ip));
+        vTaskDelete(NULL);  // Para a task que pisca o LED (se estiver rodando)
+        led_on();  // Liga o LED fixo
         
         // Definir o bit de conexão estabelecida no grupo de eventos
         xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
