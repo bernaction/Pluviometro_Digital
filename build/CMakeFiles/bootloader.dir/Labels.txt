@@ -1,13 +1,13 @@
 # Target labels
  bootloader
 # Source files and their labels
-D:/Cloud/OneDrive - UNIVALI/2024-2/Projeto de Sistemas Embarcados/M1/Pluviometro Codigo/build/CMakeFiles/bootloader
-D:/Cloud/OneDrive - UNIVALI/2024-2/Projeto de Sistemas Embarcados/M1/Pluviometro Codigo/build/CMakeFiles/bootloader.rule
-D:/Cloud/OneDrive - UNIVALI/2024-2/Projeto de Sistemas Embarcados/M1/Pluviometro Codigo/build/CMakeFiles/bootloader-complete.rule
-D:/Cloud/OneDrive - UNIVALI/2024-2/Projeto de Sistemas Embarcados/M1/Pluviometro Codigo/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule
-D:/Cloud/OneDrive - UNIVALI/2024-2/Projeto de Sistemas Embarcados/M1/Pluviometro Codigo/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule
-D:/Cloud/OneDrive - UNIVALI/2024-2/Projeto de Sistemas Embarcados/M1/Pluviometro Codigo/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule
-D:/Cloud/OneDrive - UNIVALI/2024-2/Projeto de Sistemas Embarcados/M1/Pluviometro Codigo/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule
-D:/Cloud/OneDrive - UNIVALI/2024-2/Projeto de Sistemas Embarcados/M1/Pluviometro Codigo/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule
-D:/Cloud/OneDrive - UNIVALI/2024-2/Projeto de Sistemas Embarcados/M1/Pluviometro Codigo/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule
-D:/Cloud/OneDrive - UNIVALI/2024-2/Projeto de Sistemas Embarcados/M1/Pluviometro Codigo/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule
+D:/Pluviometro_Digital/build/CMakeFiles/bootloader
+D:/Pluviometro_Digital/build/CMakeFiles/bootloader.rule
+D:/Pluviometro_Digital/build/CMakeFiles/bootloader-complete.rule
+D:/Pluviometro_Digital/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule
+D:/Pluviometro_Digital/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule
+D:/Pluviometro_Digital/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule
+D:/Pluviometro_Digital/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule
+D:/Pluviometro_Digital/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule
+D:/Pluviometro_Digital/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule
+D:/Pluviometro_Digital/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule

@@ -39,8 +39,8 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("D:/Cloud/OneDrive - UNIVALI/2024-2/Projeto de Sistemas Embarcados/M1/Pluviometro Codigo/build/esp-idf/mbedtls/mbedtls/3rdparty/everest/cmake_install.cmake")
-  include("D:/Cloud/OneDrive - UNIVALI/2024-2/Projeto de Sistemas Embarcados/M1/Pluviometro Codigo/build/esp-idf/mbedtls/mbedtls/3rdparty/p256-m/cmake_install.cmake")
+  include("D:/Pluviometro_Digital/build/esp-idf/mbedtls/mbedtls/3rdparty/everest/cmake_install.cmake")
+  include("D:/Pluviometro_Digital/build/esp-idf/mbedtls/mbedtls/3rdparty/p256-m/cmake_install.cmake")
 
 endif()
 

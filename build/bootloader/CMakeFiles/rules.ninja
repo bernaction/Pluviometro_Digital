@@ -318,7 +318,7 @@ rule C_STATIC_LIBRARY_LINKER____idf_main_
 # Rule for re-running cmake.
 
 rule RERUN_CMAKE
-  command = C:\Users\berna\.espressif\tools\cmake\3.24.0\bin\cmake.exe --regenerate-during-build -SC:\Users\berna\esp\v5.3.1\esp-idf\components\bootloader\subproject -B"D:\Cloud\OneDrive - UNIVALI\2024-2\Projeto de Sistemas Embarcados\M1\Pluviometro Codigo\build\bootloader"
+  command = C:\Users\berna\.espressif\tools\cmake\3.24.0\bin\cmake.exe --regenerate-during-build -SC:\Users\berna\esp\v5.3.1\esp-idf\components\bootloader\subproject -BD:\Pluviometro_Digital\build\bootloader
   description = Re-running CMake...
   generator = 1
 

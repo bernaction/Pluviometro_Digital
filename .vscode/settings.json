@@ -17,6 +17,9 @@
     "idf.flashType": "UART",
     "idf.gitPathWin": "C:\\Users\\berna\\.espressif\\tools\\idf-git\\2.39.2\\cmd\\git.exe",
     "files.associations": {
-        "event_groups.h": "c"
+        "event_groups.h": "c",
+        "sensor_task.h": "c",
+        "esp_log.h": "c",
+        "task.h": "c"
     }
 }

@@ -3,4 +3,4 @@ source "C:/Users/berna/esp/v5.3.1/esp-idf/components/esp_app_format/Kconfig.proj
 source "C:/Users/berna/esp/v5.3.1/esp-idf/components/esp_rom/Kconfig.projbuild"
 source "C:/Users/berna/esp/v5.3.1/esp-idf/components/esptool_py/Kconfig.projbuild"
 source "C:/Users/berna/esp/v5.3.1/esp-idf/components/partition_table/Kconfig.projbuild"
-source "D:/Cloud/OneDrive - UNIVALI/2024-2/Projeto de Sistemas Embarcados/M1/Pluviometro Codigo/main/Kconfig.projbuild"
+source "D:/Pluviometro_Digital/main/Kconfig.projbuild"

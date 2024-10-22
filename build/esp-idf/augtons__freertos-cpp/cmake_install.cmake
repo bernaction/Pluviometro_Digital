@@ -1,4 +1,4 @@
-# Install script for directory: D:/Cloud/OneDrive - UNIVALI/2024-2/Projeto de Sistemas Embarcados/M1/Pluviometro Codigo/managed_components/augtons__freertos-cpp
+# Install script for directory: D:/Pluviometro_Digital/managed_components/augtons__freertos-cpp
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
