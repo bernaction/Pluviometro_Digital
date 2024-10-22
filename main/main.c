@@ -45,6 +45,21 @@ void led_off() {
 
 extern void erase_wifi_credentials();
 
+void get_saved_wifi_credentials(char *ssid, char *password) {
+    nvs_handle_t nvs_handle;
+    esp_err_t err = nvs_open("wifi_config", NVS_READONLY, &nvs_handle);
+    if (err == ESP_OK) {
+        size_t ssid_len = 32;
+        size_t password_len = 64;
+        nvs_get_str(nvs_handle, "ssid", ssid, &ssid_len);
+        nvs_get_str(nvs_handle, "password", password, &password_len);
+        nvs_close(nvs_handle);
+    } else {
+        ESP_LOGE("WIFI_MANAGER", "Erro ao recuperar as credenciais de WiFi");
+    }
+}
+
+
 void check_reset_button() {
     int64_t press_start_time = 0;  // Variável para armazenar o tempo inicial da pressão
 
@@ -110,6 +125,9 @@ void app_main() {
         start_ap_mode();  // Iniciar o modo AP para configuração
     } else {
         ESP_LOGI("WIFI_MANAGER", "Conectando-se ao WiFi salvo...");
+        char ssid[32], password[64];
+        get_saved_wifi_credentials(ssid, password);  // Função que retorna o SSID e senha salvos
+        start_sta_mode(ssid, password);  // Inicie o modo STA com as credenciais recuperadas
     }
 
     // Inicia a rotina do sensor no núcleo 0 (PRO CPU)
