@@ -43,6 +43,7 @@ void sensor_task(void *pvParameter){
         }
 
         if (estado_atual == 1 && ultimo_estado == 0) {
+            contador++;
             ESP_LOGI(TAG, "Borda de descida detectada. Contagem: %d", contador);
         }
 
@@ -54,15 +55,12 @@ void sensor_task(void *pvParameter){
 
 void send_data_thingspeak(void *pvParameter) {
     while (1) {
-        // Verificar se estamos conectados à internet antes de tentar enviar dados
         EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group, WIFI_CONNECTED_BIT, pdFALSE, pdTRUE, portMAX_DELAY);
         if (bits & WIFI_CONNECTED_BIT) {
+            //vTaskDelay(900000 / portTICK_PERIOD_MS);  // 15 minutos de delay
+            vTaskDelay(60000 / portTICK_PERIOD_MS);  //60 segundss de delay
             ESP_LOGI(TAG, "Conectado ao WiFi. Preparando para enviar dados...");
-
-            // Calculo da precipitação
             precipitacao = (contador * 1.63) * 4; 
-            // Cada virada do basculante equivale à 1,63 mm. Vezes 4 pois o intervalo observado é de apenas 15 minutos, não 1 hora.
-                        
             contador = 0;
 
             // Envio do dado para o ThingSpeak
@@ -73,7 +71,6 @@ void send_data_thingspeak(void *pvParameter) {
                 .url = url,
             };
             esp_http_client_handle_t client = esp_http_client_init(&config);
-
             esp_err_t err = esp_http_client_perform(client);
 
             if (err == ESP_OK) {
@@ -81,11 +78,7 @@ void send_data_thingspeak(void *pvParameter) {
             } else {
                 ESP_LOGE(TAG2, "Falha ao enviar dados: %s", esp_err_to_name(err));
             }
-
             esp_http_client_cleanup(client);
-
-            // Delay entre cada envio
-            vTaskDelay(900000 / portTICK_PERIOD_MS);  // 15 minutos de delay
         } else {
             ESP_LOGE(TAG, "Não conectado ao WiFi. Tentando novamente em breve...");
             vTaskDelay(10000 / portTICK_PERIOD_MS);  // Espera 10 segundos antes de tentar novamente
