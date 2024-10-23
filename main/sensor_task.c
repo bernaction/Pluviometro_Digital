@@ -60,7 +60,9 @@ void send_data_thingspeak(void *pvParameter) {
             ESP_LOGI(TAG, "Conectado ao WiFi. Preparando para enviar dados...");
 
             // Calculo da precipitação
-            precipitacao = (contador * 0.15) * 12; // 0.15mm deveria ser o volume do basculante
+            precipitacao = (contador * 1.63) * 4; 
+            // Cada virada do basculante equivale à 1,63 mm. Vezes 4 pois o intervalo observado é de apenas 15 minutos, não 1 hora.
+                        
             contador = 0;
 
             // Envio do dado para o ThingSpeak
@@ -83,7 +85,7 @@ void send_data_thingspeak(void *pvParameter) {
             esp_http_client_cleanup(client);
 
             // Delay entre cada envio
-            vTaskDelay(60000 / portTICK_PERIOD_MS);  // 1 minuto de delay
+            vTaskDelay(900000 / portTICK_PERIOD_MS);  // 15 minutos de delay
         } else {
             ESP_LOGE(TAG, "Não conectado ao WiFi. Tentando novamente em breve...");
             vTaskDelay(10000 / portTICK_PERIOD_MS);  // Espera 10 segundos antes de tentar novamente
